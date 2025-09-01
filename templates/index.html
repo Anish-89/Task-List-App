@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task List App</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/styles.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/moment.js/2.29.1/moment.min.js"></script>
+    <script src="{{ url_for('static', filename='js/scripts.js') }}" defer></script>
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center mb-4"><i class="bi bi-list-task me-2"></i>Task List</h1>
+        
+        <!-- Filters -->
+        <div class="row mb-3 filters g-2">
+            <div class="col-md-2">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-building"></i></span>
+                    <input type="text" class="form-control" id="filter-entity" placeholder="Entity Name" data-bs-toggle="tooltip" title="Filter by customer entity name">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-tags"></i></span>
+                    <input type="text" class="form-control" id="filter-type" placeholder="Task Type" data-bs-toggle="tooltip" title="Filter by task type">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-check-circle"></i></span>
+                    <select class="form-select" id="filter-status" data-bs-toggle="tooltip" title="Filter by status">
+                        <option value="">Status (All)</option>
+                        <option value="open">Open</option>
+                        <option value="closed">Closed</option>
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-calendar"></i></span>
+                    <input type="date" class="form-control" id="filter-date" data-bs-toggle="tooltip" title="Filter by creation date">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="input-group">
+                    <span class="input-group-text"><i class="bi bi-person"></i></span>
+                    <input type="text" class="form-control" id="filter-contact" placeholder="Contact Person" data-bs-toggle="tooltip" title="Filter by team member/contact person">
+                </div>
+            </div>
+            <div class="col-md-2 d-flex">
+                <button class="btn btn-outline-secondary me-2 w-50" id="clear-filters"><i class="bi bi-arrow-counterclockwise"></i> Clear</button>
+                <button class="btn btn-primary w-50" id="apply-filters"><i class="bi bi-funnel"></i> Apply</button>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div class="text-center mb-3" id="loading-spinner" style="display: none;">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Task Table -->
+        <table class="table table-striped table-hover table-bordered shadow-sm">
+            <thead class="table-dark">
+                <tr>
+                    <th data-sort="creation_date"><i class="bi bi-calendar-event me-1"></i>Creation Date <span class="sort-icon"></span></th>
+                    <th data-sort="entity_name"><i class="bi bi-building me-1"></i>Entity Name <span class="sort-icon"></span></th>
+                    <th data-sort="task_type"><i class="bi bi-tags me-1"></i>Task Type <span class="sort-icon"></span></th>
+                    <th data-sort="task_time"><i class="bi bi-clock me-1"></i>Task Time <span class="sort-icon"></span></th>
+                    <th data-sort="contact_person"><i class="bi bi-person me-1"></i>Contact Person <span class="sort-icon"></span></th>
+                    <th><i class="bi bi-journal-text me-1"></i>Note</th>
+                    <th><i class="bi bi-check-circle me-1"></i>Status</th>
+                    <th><i class="bi bi-gear me-1"></i>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="task-table-body"></tbody>
+        </table>
+
+        <!-- Create Button -->
+        <button class="btn btn-success mb-3" data-bs-toggle="modal" data-bs-target="#taskModal" id="create-task-btn"><i class="bi bi-plus-circle me-2"></i>Create Task</button>
+    </div>
+
+    <!-- Modal for Create/Edit -->
+    <div class="modal fade" id="taskModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title" id="modalTitle"><i class="bi bi-pencil-square me-2"></i>Create Task</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="taskForm" novalidate>
+                        <input type="hidden" id="taskId">
+                        <div class="mb-3">
+                            <label for="entity_name" class="form-label">Entity Name</label>
+                            <input type="text" class="form-control" id="entity_name" required>
+                            <div class="invalid-feedback">Entity Name is required.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="task_type" class="form-label">Task Type</label>
+                            <input type="text" class="form-control" id="task_type" required>
+                            <div class="invalid-feedback">Task Type is required.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="task_time" class="form-label">Task Time</label>
+                            <input type="datetime-local" class="form-control" id="task_time" required>
+                            <div class="invalid-feedback">Task Time is required.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="contact_person" class="form-label">Contact Person (Team Member)</label>
+                            <input type="text" class="form-control" id="contact_person" required>
+                            <div class="invalid-feedback">Contact Person is required.</div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="note" class="form-label">Note (Optional)</label>
+                            <textarea class="form-control" id="note"></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="bi bi-x-circle me-2"></i>Close</button>
+                    <button type="button" class="btn btn-primary" id="saveTask"><i class="bi bi-save me-2"></i>Save</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
